@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Window, WindowContent, WindowHeader, Button, TextInput, GroupBox, Select } from 'react95';
 import Draggable from 'react-draggable';
 import useLocalStorage from '../utils/useLocalStorage';
+import Cookies from 'js-cookie';
 
 const Wrapper = styled.div`
   position: fixed;
@@ -14,14 +15,43 @@ const FormGroup = styled.div`
 `;
 
 const Context = ({ onClose }) => {
-  const [internalId, setInternalId] = useState('test_bettor');
-  const [redirectUrl, setRedirectUrl] = useState('');
+  const [internalId, setInternalId] = useState('jack'); // Hardcoded username
+  const [redirectUrl, setRedirectUrl] = useState('http://localhost:3000/bank'); // Hardcoded redirect URL
   const [uiMode, setUiMode] = useState('system');
   const [extensionAuthToken, setExtensionAuthToken] = useState('');
   const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [cid, setCid] = useLocalStorage('sharpsports_cid', null);
+
+  useEffect(() => {
+    // Fetch the extension auth token
+    const fetchExtensionAuthToken = async () => {
+      const options = {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          Authorization: 'Token 4c0654348c4a7b8c4bf855d59ab16b65c5b69d6f', // Private API Key
+        },
+        body: JSON.stringify({ internalId }),
+      };
+
+      try {
+        const response = await fetch('https://api.sharpsports.io/v1/extension/auth', options);
+        if (!response.ok) {
+          throw new Error('Failed to fetch extension auth token');
+        }
+        const data = await response.json();
+        setExtensionAuthToken(data.token);
+        Cookies.set('extensionAuthToken', data.token); // Store the token in cookies
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
+    fetchExtensionAuthToken();
+  }, [internalId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +64,7 @@ const Context = ({ onClose }) => {
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
-        Authorization: 'Token 4c0654348c4a7b8c4bf855d59ab16b65c5b69d6f',
+        Authorization: 'Token 4c0654348c4a7b8c4bf855d59ab16b65c5b69d6f', // Public API Key
       },
       body: JSON.stringify({
         internalId,
@@ -77,6 +107,7 @@ const Context = ({ onClose }) => {
                     placeholder="Internal ID"
                     onChange={(e) => setInternalId(e.target.value)}
                     fullWidth
+                    disabled
                   />
                 </FormGroup>
                 <FormGroup>
@@ -86,6 +117,7 @@ const Context = ({ onClose }) => {
                     placeholder="Redirect URL"
                     onChange={(e) => setRedirectUrl(e.target.value)}
                     fullWidth
+                    disabled
                   />
                 </FormGroup>
                 <FormGroup>
@@ -108,6 +140,7 @@ const Context = ({ onClose }) => {
                     placeholder="Extension Auth Token"
                     onChange={(e) => setExtensionAuthToken(e.target.value)}
                     fullWidth
+                    disabled
                   />
                 </FormGroup>
                 <Button type="submit" style={{ marginTop: '1rem' }} disabled={loading || !internalId}>

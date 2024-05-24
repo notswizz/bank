@@ -23,6 +23,9 @@ export default async (req, res) => {
       username,
       email,
       password: hashedPassword,
+      balance: "0", // default balance
+      join: new Date(), // current date
+      walletAddress: "" // default empty wallet address
     };
 
     await db.collection('users').insertOne(newUser);
