@@ -1,3 +1,5 @@
+// pages/api/users.js
+
 import clientPromise from '../../utils/mongodb';
 
 export default async (req, res) => {
@@ -20,7 +22,7 @@ export default async (req, res) => {
     } else {
       const collection = db.collection('users');
       const users = await collection.find({}).toArray();
-      const totalBalance = users.reduce((sum, user) => sum + parseFloat(user.balance), 0);
+      const totalBalance = users.reduce((sum, user) => sum + parseFloat(user.balance || 0), 0);
       
       return res.status(200).json({ users, totalBalance });
     }

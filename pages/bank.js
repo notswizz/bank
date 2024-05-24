@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import Menu from '../components/Menu';
 import Profile from '../components/Profile';
 import Account from '../components/Account';
-import Crypto from '../components/Crypto';
+import Bank from '../components/Bank';
 import Alpha from '../components/Alpha';
 import Stats from '../components/Stats';
 import Books from '../components/Books';
@@ -29,17 +29,18 @@ const WindowWrapper = styled.div`
   position: absolute;
 `;
 
-const Bank = () => {
+const Bank95 = () => {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [showProfile, setShowProfile] = useLocalStorage('showProfile', true);
-  const [showAccount, setShowAccount] = useLocalStorage('showAccount', true);
-  const [showCrypto, setShowCrypto] = useLocalStorage('showCrypto', true);
-  const [showAlpha, setShowAlpha] = useLocalStorage('showAlpha', true);
-  const [showStats, setShowStats] = useLocalStorage('showStats', true);
-  const [showBooks, setShowBooks] = useLocalStorage('showBooks', true);
-  const [showContext, setShowContext] = useLocalStorage('showContext', true);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
+  const [showBank, setShowBank] = useState(false);
+  const [showAlpha, setShowAlpha] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showBooks, setShowBooks] = useState(false);
+  const [showContext, setShowContext] = useState(false);
+  const [showInvestmentTool, setShowInvestmentTool] = useState(false);
 
   const accountData = [
     { account: 'Bovada', balance: '$12,098', lastUpdate: '2024-05-20' },
@@ -64,91 +65,79 @@ const Bank = () => {
     router.push('/');
   };
 
-  const toggleProfile = () => {
-    setShowProfile(!showProfile);
-  };
-
-  const toggleAccount = () => {
-    setShowAccount(!showAccount);
-  };
-
-  const toggleCrypto = () => {
-    setShowCrypto(!showCrypto);
-  };
-
-  const toggleAlpha = () => {
-    setShowAlpha(!showAlpha);
-  };
-
-  const toggleStats = () => {
-    setShowStats(!showStats);
-  };
-
-  const toggleBooks = () => {
-    setShowBooks(!showBooks);
-  };
-
-  const toggleContext = () => {
-    setShowContext(!showContext);
-  };
-
   if (!mounted) {
     return null;
   }
+
+  const openWindows = {
+    profile: showProfile,
+    account: showAccount,
+    bank: showBank,
+    alpha: showAlpha,
+    stats: showStats,
+    books: showBooks,
+    context: showContext,
+    investmentTool: showInvestmentTool,
+  };
 
   return (
     <Wrapper>
       <Menu
         handleLogout={handleLogout}
         email={email}
-        onProfileClick={toggleProfile}
-        onAccountClick={toggleAccount}
-        onCryptoClick={toggleCrypto}
-        onAlphaClick={toggleAlpha}
-        onStatsClick={toggleStats}
-        onBooksClick={toggleBooks}
-        onContextClick={toggleContext}
+        onProfileClick={() => setShowProfile(!showProfile)}
+        onAccountClick={() => setShowAccount(!showAccount)}
+        onBankClick={() => setShowBank(!showBank)}
+        onAlphaClick={() => setShowAlpha(!showAlpha)}
+        onStatsClick={() => setShowStats(!showStats)}
+        onBooksClick={() => setShowBooks(!showBooks)}
+        onContextClick={() => setShowContext(!showContext)}
+        onInvestmentToolClick={() => setShowInvestmentTool(!showInvestmentTool)}
+        openWindows={openWindows}
       />
       <h1>BANK 95</h1>
       {showProfile && (
         <WindowWrapper style={{ top: '10%', left: '15%' }}>
-          <Profile email={email} onClose={toggleProfile} />
+          <Profile email={email} onClose={() => setShowProfile(false)} />
         </WindowWrapper>
       )}
       {showAccount && (
         <WindowWrapper style={{ top: '10%', left: '50%' }}>
-          <Account data={accountData} onClose={toggleAccount} />
+          <Account data={accountData} onClose={() => setShowAccount(false)} />
         </WindowWrapper>
       )}
-      {showCrypto && (
+      {showBank && (
         <WindowWrapper style={{ top: '67%', left: '10%' }}>
-          <Crypto onClose={toggleCrypto} />
+          <Bank onClose={() => setShowBank(false)} />
         </WindowWrapper>
       )}
       {showAlpha && (
         <WindowWrapper style={{ top: '45%', left: '55%' }}>
-          <Alpha onClose={toggleAlpha} />
+          <Alpha onClose={() => setShowAlpha(false)} />
         </WindowWrapper>
       )}
       {showStats && (
         <WindowWrapper style={{ top: '45%', left: '75%' }}>
-          <Stats onClose={toggleStats} />
+          <Stats onClose={() => setShowStats(false)} />
         </WindowWrapper>
       )}
       {showBooks && (
         <WindowWrapper style={{ top: '20%', left: '20%' }}>
-          <Books onClose={toggleBooks} />
+          <Books onClose={() => setShowBooks(false)} />
         </WindowWrapper>
       )}
       {showContext && (
         <WindowWrapper style={{ top: '30%', left: '30%' }}>
-          <Context onClose={toggleContext} />
+          <Context onClose={() => setShowContext(false)} />
         </WindowWrapper>
       )}
-     <InvestmentTool onClose={() => setShowInvestmentTool(false)} />
-
+      {showInvestmentTool && (
+        <WindowWrapper style={{ top: '40%', left: '40%' }}>
+          <InvestmentTool onClose={() => setShowInvestmentTool(false)} />
+        </WindowWrapper>
+      )}
     </Wrapper>
   );
 };
 
-export default Bank;
+export default Bank95;

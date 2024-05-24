@@ -32,11 +32,13 @@ const Menu = ({
   email,
   onProfileClick,
   onAccountClick,
-  onCryptoClick,
+  onBankClick,
   onAlphaClick,
   onStatsClick,
   onBooksClick,
   onContextClick,
+  onInvestmentToolClick,
+  openWindows,
 }) => {
   const [open, setOpen] = useState(false);
   const [userData, setUserData] = useState({ username: '', balance: '' });
@@ -93,45 +95,51 @@ const Menu = ({
               >
                 <MenuListItem onClick={onProfileClick}>
                   <EmojiSpan role="img" aria-label="👨‍💻">
-                    👨‍💻
+                    👨‍💻 {openWindows.profile && '✔️'}
                   </EmojiSpan>
                   Profile
                 </MenuListItem>
                 <MenuListItem onClick={onAccountClick}>
                   <EmojiSpan role="img" aria-label="📁">
-                    📁
+                    📁 {openWindows.account && '✔️'}
                   </EmojiSpan>
-                  Accounts
+                  Portfolio
                 </MenuListItem>
-                <MenuListItem onClick={onCryptoClick}>
+                <MenuListItem onClick={onBankClick}>
                   <EmojiSpan role="img" aria-label="💰">
-                    💰
+                    💰 {openWindows.bank && '✔️'}
                   </EmojiSpan>
-                  Crypto
+                  Bank
                 </MenuListItem>
                 <MenuListItem onClick={onAlphaClick}>
                   <EmojiSpan role="img" aria-label="🍀">
-                    🍀
+                    🍀 {openWindows.alpha && '✔️'}
                   </EmojiSpan>
                   Alpha
                 </MenuListItem>
                 <MenuListItem onClick={onStatsClick}>
                   <EmojiSpan role="img" aria-label="📊">
-                    📊
+                    📊 {openWindows.stats && '✔️'}
                   </EmojiSpan>
                   Stats
                 </MenuListItem>
                 <MenuListItem onClick={onBooksClick}>
                   <EmojiSpan role="img" aria-label="📚">
-                    📚
+                    📚 {openWindows.books && '✔️'}
                   </EmojiSpan>
                   Books
                 </MenuListItem>
                 <MenuListItem onClick={onContextClick}>
                   <EmojiSpan role="img" aria-label="🔗">
-                    🔗
+                    🔗 {openWindows.context && '✔️'}
                   </EmojiSpan>
-                  Context
+                  Connect
+                </MenuListItem>
+                <MenuListItem onClick={onInvestmentToolClick}>
+                  <EmojiSpan role="img" aria-label="🛠️">
+                    🛠️ {openWindows.investmentTool && '✔️'}
+                  </EmojiSpan>
+                  Invest
                 </MenuListItem>
                 <Separator />
                 <MenuListItem onClick={handleLogout}>

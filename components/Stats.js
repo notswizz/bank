@@ -21,6 +21,7 @@ const formatDate = (dateString) => {
 
 const Stats = ({ onClose }) => {
   const [users, setUsers] = useState([]);
+  const [totalBalance, setTotalBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,6 +34,7 @@ const Stats = ({ onClose }) => {
         }
         const data = await response.json();
         setUsers(data.users);
+        setTotalBalance(data.totalBalance);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -59,23 +61,30 @@ const Stats = ({ onClose }) => {
             <span>Stats</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
+          <div style={{ marginTop: '1rem', fontWeight: 'bold' }}>
+              TVL: ${totalBalance}
+            </div>
           <ScrollableWindowContent>
+         
             <Table>
               <TableHead>
                 <TableRow>
                   <TableHeadCell>Username</TableHeadCell>
                   <TableHeadCell>Join Date</TableHeadCell>
+                
                 </TableRow>
               </TableHead>
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
                     <TableDataCell>{user.username}</TableDataCell>
-                    <TableDataCell>{formatDate(user.join)}</TableDataCell>
+                    <TableDataCell>{user.join ? formatDate(user.join) : 'N/A'}</TableDataCell>
+                
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+          
           </ScrollableWindowContent>
         </Window>
       </Wrapper>

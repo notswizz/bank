@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Window, WindowContent, WindowHeader, Button, Slider } from 'react95';
+import { Window, WindowContent, WindowHeader, Button, Slider, Radio, GroupBox } from 'react95';
 import Draggable from 'react-draggable';
 
 const Wrapper = styled.div`
@@ -15,13 +15,6 @@ const FormGroup = styled.div`
 const Label = styled.label`
   display: block;
   margin-bottom: 0.5rem;
-`;
-
-const Select = styled.select`
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 4px;
-  border: 1px solid #ccc;
 `;
 
 const Input = styled.input`
@@ -52,16 +45,17 @@ const StyledTable = styled.table`
 `;
 
 const InvestmentTool = ({ onClose }) => {
-  const [asset, setAsset] = useState('ETH');
+  const [isClient, setIsClient] = useState(false);
+  const [position, setPosition] = useState('long');
   const [amount, setAmount] = useState('');
   const [leverage, setLeverage] = useState(1);
-  const [risk, setRisk] = useState('moderate');
   const [ethPrice, setEthPrice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
   useEffect(() => {
+    setIsClient(true);
     const fetchEthPrice = async () => {
       try {
         const response = await fetch('/api/fetchEthPrice');
@@ -81,25 +75,31 @@ const InvestmentTool = ({ onClose }) => {
     fetchEthPrice();
   }, []);
 
-  const riskBands = {
-    moderate: { upper: 1.1, lower: 0.9 },
-    aggressive: { upper: 1.2, lower: 0.8 },
-    degen: { upper: 1.5, lower: 0.7 },
+  const handleCalculate = () => {
+    const positionSize = amount * leverage;
+    const initialMargin = parseFloat(amount);
+    const liquidationPrice = position === 'long'
+      ? ethPrice * (1 - (initialMargin / positionSize))
+      : ethPrice * (1 + (initialMargin / positionSize));
+
+    setResult({
+      ethPrice,
+      leverage,
+      stake: amount,
+      positionSize,
+      liquidationPrice,
+    });
   };
 
-  const handleInvest = async () => {
-    const band = riskBands[risk];
-    const upperBand = ethPrice * band.upper;
-    const lowerBand = ethPrice * band.lower;
-
+  const handleSubmit = async () => {
     const investmentData = {
-      asset,
-      amount,
-      leverage,
-      risk,
-      upperBand,
-      lowerBand,
-      ethPrice,
+      asset: 'ETH',
+      amount: result.stake,
+      leverage: result.leverage,
+      risk: position,
+      ethPrice: result.ethPrice,
+      positionSize: result.positionSize,
+      liquidationPrice: result.liquidationPrice,
     };
 
     try {
@@ -117,13 +117,16 @@ const InvestmentTool = ({ onClose }) => {
 
       const resultData = await response.json();
       console.log(resultData);
-      setResult(investmentData);
       onClose(); // Close the window after successful investment
     } catch (error) {
       console.error('Error saving investment:', error);
       setError(error.message);
     }
   };
+
+  if (!isClient) {
+    return null; // Do not render on the server
+  }
 
   if (loading && !ethPrice) {
     return <div>Loading...</div>;
@@ -142,13 +145,24 @@ const InvestmentTool = ({ onClose }) => {
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
           <WindowContent>
-            <FormGroup>
-              <Label htmlFor="asset">Choose Asset</Label>
-              <Select id="asset" value={asset} onChange={(e) => setAsset(e.target.value)}>
-                <option value="ETH">ETH</option>
-                {/* Add more assets here */}
-              </Select>
-            </FormGroup>
+            <GroupBox label='Position'>
+              <Radio
+                checked={position === 'long'}
+                onChange={() => setPosition('long')}
+                value='long'
+                label='📈 Long'
+                name='position'
+              />
+              <br />
+              <Radio
+                checked={position === 'short'}
+                onChange={() => setPosition('short')}
+                value='short'
+                label='📉 Short'
+                name='position'
+              />
+            </GroupBox>
+
             <FormGroup>
               <Label htmlFor="amount">Amount ($USD)</Label>
               <Input
@@ -158,57 +172,57 @@ const InvestmentTool = ({ onClose }) => {
                 onChange={(e) => setAmount(e.target.value)}
               />
             </FormGroup>
+
             <FormGroup>
-              <Label>Leverage (1-7x)</Label>
+              <Label>Leverage (1-20x)</Label>
               <Slider
                 size="300px"
                 min={1}
-                max={7}
+                max={20}
                 step={1}
                 value={leverage}
                 onChange={(value) => setLeverage(value)}
                 marks={[
                   { value: 1, label: '1x' },
-                  { value: 2, label: '2x' },
-                  { value: 3, label: '3x' },
-                  { value: 4, label: '4x' },
                   { value: 5, label: '5x' },
-                  { value: 6, label: '6x' },
-                  { value: 7, label: '7x' },
+                  { value: 10, label: '10x' },
+                  { value: 15, label: '15x' },
+                  { value: 20, label: '20x' },
                 ]}
               />
             </FormGroup>
-            <FormGroup>
-              <Label htmlFor="risk">Risk Level</Label>
-              <Select id="risk" value={risk} onChange={(e) => setRisk(e.target.value)}>
-                <option value="moderate">Moderate</option>
-                <option value="aggressive">Aggressive</option>
-                <option value="degen">Degen</option>
-              </Select>
-            </FormGroup>
-            <StyledTable>
-              <thead>
-                <tr>
-                  <th>Current ETH Price</th>
-                  <th>Upper Band</th>
-                  <th>Lower Band</th>
-                  <th>Leverage</th>
-                  <th>Risk Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>${ethPrice.toFixed(2)}</td>
-                  <td>${(ethPrice * riskBands[risk].upper).toFixed(2)}</td>
-                  <td>${(ethPrice * riskBands[risk].lower).toFixed(2)}</td>
-                  <td>{leverage}x</td>
-                  <td>{risk}</td>
-                </tr>
-              </tbody>
-            </StyledTable>
-            <Button onClick={handleInvest} disabled={!amount || amount <= 0 || !ethPrice}>
-              Invest
+
+            <Button onClick={handleCalculate} disabled={!amount || amount <= 0 || !ethPrice}>
+              Calculate
             </Button>
+
+            {result && (
+              <>
+                <StyledTable>
+                  <thead>
+                    <tr>
+                      <th>ETH Price</th>
+                      <th>Leverage</th>
+                      <th>Stake</th>
+                      <th>Position Size</th>
+                      <th>Liquidation Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>${result.ethPrice.toFixed(2)}</td>
+                      <td>{result.leverage}x</td>
+                      <td>${result.stake}</td>
+                      <td>${result.positionSize.toFixed(2)}</td>
+                      <td>${result.liquidationPrice.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </StyledTable>
+                <Button onClick={handleSubmit}>
+                  Submit
+                </Button>
+              </>
+            )}
           </WindowContent>
         </Window>
       </Wrapper>
