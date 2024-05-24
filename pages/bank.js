@@ -10,6 +10,7 @@ import Alpha from '../components/Alpha';
 import Stats from '../components/Stats';
 import Books from '../components/Books';
 import Context from '../components/Context';
+import InvestmentTool from '../components/Tool';
 import { Button } from 'react95';
 import useLocalStorage from '../utils/useLocalStorage';
 
@@ -144,6 +145,8 @@ const Bank = () => {
           <Context onClose={toggleContext} />
         </WindowWrapper>
       )}
+     <InvestmentTool onClose={() => setShowInvestmentTool(false)} />
+
     </Wrapper>
   );
 };
