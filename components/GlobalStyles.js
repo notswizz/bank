@@ -20,6 +20,14 @@ const GlobalStyles = createGlobalStyle`
   body {
     font-family: 'ms_sans_serif';
   }
+  .window-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .window-header button {
+    margin-left: auto;
+  }
 `;
 
 export default GlobalStyles;

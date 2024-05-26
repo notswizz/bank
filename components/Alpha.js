@@ -20,7 +20,7 @@ const Alpha = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window>
-          <WindowHeader>
+        <WindowHeader className="window-header">
             <span>Alpha</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>

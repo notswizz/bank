@@ -1,144 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import React from 'react';
+import styled, { ThemeProvider } from 'styled-components';
+import { AppBar, Button, Window, WindowContent, WindowHeader, Toolbar } from 'react95';
+import original from 'react95/dist/themes/original';
+import PrivyButton from '../components/PrivyButton';
+import { usePrivy } from '@privy-io/react-auth';
 import { useRouter } from 'next/router';
-import Welcome from '../components/Welcome';
-import Login from '../components/Login';
-import Menu from '../components/Menu';
 
 const Wrapper = styled.div`
-  padding: 5rem;
-  background: ${({ theme }) => theme.desktopBackground};
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   height: 100vh;
-  gap: 2rem;
+  background: ${({ theme }) => theme.desktopBackground};
+  padding: 2rem;
 `;
 
-const Content = styled.div`
+const Header = styled(WindowHeader)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const Content = styled(WindowContent)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+`;
+
+const Title = styled.h1`
+  font-size: 2rem;
+  margin-bottom: 1rem;
+`;
+
+const Description = styled.p`
+  font-size: 1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+`;
+
+const Footer = styled(Toolbar)`
   display: flex;
   justify-content: center;
-  align-items: center;
-  gap: 2rem;
+  margin-top: 2rem;
 `;
 
-export default function Home() {
-  const [state, setState] = useState({
-    welcomeEnabled: false,
-    showLogin: true,
-    formData: {
-      username: '',
-      email: '',
-      password: '',
-    },
-    isAuthenticated: false,
-  });
-
+const Home = () => {
+  const { ready, authenticated, user } = usePrivy();
   const router = useRouter();
 
-  useEffect(() => {
-    const token = Cookies.get('token');
-    const email = Cookies.get('email');
-    if (token) {
-      setState((prevState) => ({
-        ...prevState,
-        isAuthenticated: true,
-        formData: {
-          ...prevState.formData,
-          email: email || '',
-        },
-      }));
+  React.useEffect(() => {
+    if (ready && authenticated) {
       router.push('/bank');
     }
-  }, [router]);
+  }, [ready, authenticated, router]);
 
-  const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
-    setState((prevState) => ({
-      ...prevState,
-      [name]: checked,
-      showLogin: true,
-    }));
-  };
-
-  const handleFormChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setState((prevState) => ({
-      ...prevState,
-      formData: {
-        ...prevState.formData,
-        [name]: type === 'checkbox' ? checked : value,
-      },
-    }));
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    const { username, email, password } = state.formData;
-    try {
-      const response = state.showLogin
-        ? await axios.post('/api/auth/login', { email, password })
-        : await axios.post('/api/auth/register', { username, email, password });
-      console.log(response.data);
-      Cookies.set('token', response.data.token);
-      Cookies.set('email', email);
-      setState((prevState) => ({
-        ...prevState,
-        isAuthenticated: true,
-      }));
-      router.push('/bank');
-    } catch (error) {
-      console.error(error.response.data);
-    }
-  };
-
-  const toggleForm = () => {
-    setState((prevState) => ({
-      ...prevState,
-      showLogin: !prevState.showLogin,
-    }));
-  };
-
-  const handleLogout = () => {
-    Cookies.remove('token');
-    Cookies.remove('email');
-    setState({
-      welcomeEnabled: false,
-      showLogin: true,
-      formData: {
-        username: '',
-        email: '',
-        password: '',
-      },
-      isAuthenticated: false,
-    });
-    router.push('/');
-  };
+  if (!ready) {
+    return <div>Loading...</div>; // Show a loading state while Privy is initializing
+  }
 
   return (
-    <Wrapper>
-      <Menu isAuthenticated={state.isAuthenticated} handleLogout={handleLogout} email={state.formData.email} />
-      <Content>
-        {!state.isAuthenticated && (
-          <>
-            <Welcome
-              welcomeEnabled={state.welcomeEnabled}
-              handleCheckboxChange={handleCheckboxChange}
-            />
-            {state.welcomeEnabled && (
-              <Login
-                state={state}
-                handleFormChange={handleFormChange}
-                handleFormSubmit={handleFormSubmit}
-                toggleForm={toggleForm}
-              />
-            )}
-          </>
-        )}
-      </Content>
-    </Wrapper>
+    <ThemeProvider theme={original}>
+      <Wrapper>
+        <Window style={{ width: 400 }}>
+          <Header>
+            <span>Bank 95</span>
+           
+          </Header>
+          <Content>
+            <Title>Welcome to Bank 95</Title>
+            <Description>
+              the future of finance... like it's 1995
+            </Description>
+            <PrivyButton />
+          </Content>
+          <Footer>
+          <Button onClick={() => alert('About button clicked!')}>Refer</Button>
+            <Button onClick={() => alert('Help button clicked!')}>Help</Button>
+            <Button onClick={() => alert('About button clicked!')}>About</Button>
+            <Button onClick={() => alert('About button clicked!')}>WTF</Button>
+          </Footer>
+        </Window>
+      </Wrapper>
+    </ThemeProvider>
   );
-}
+};
+
+export default Home;

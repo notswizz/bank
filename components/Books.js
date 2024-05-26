@@ -14,6 +14,8 @@ const ScrollableWindowContent = styled(ScrollView)`
   padding: 1rem;
 `;
 
+
+
 const Books = ({ onClose }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ const Books = ({ onClose }) => {
       try {
         const response = await fetch('https://api.sharpsports.io/v1/books?support=true', {
           headers: {
-            'Authorization': 'Token 4c0654348c4a7b8c4bf855d59ab16b65c5b69d6f',
+            'Authorization': 'Token 14e0460d14dcde2c7098e45e634c09442c71d79b',
             'accept': 'application/json',
           },
         });
@@ -55,7 +57,7 @@ const Books = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window>
-          <WindowHeader>
+        <WindowHeader className="window-header">
             <span>Sports Books</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>

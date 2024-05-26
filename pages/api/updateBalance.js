@@ -1,5 +1,3 @@
-// pages/api/updateBalance.js
-
 import clientPromise from '../../utils/mongodb';
 
 export default async (req, res) => {
@@ -7,22 +5,26 @@ export default async (req, res) => {
     return res.status(405).end(); // Method Not Allowed
   }
 
-  const { email, amount } = req.body;
+  const { walletAddress, amount } = req.body;
+
+  if (!walletAddress || amount == null) {
+    return res.status(400).json({ error: 'Wallet address and amount are required' });
+  }
+
+  const parsedAmount = parseInt(amount, 10); // Parse amount as an integer
+  if (isNaN(parsedAmount)) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
 
   try {
     const client = await clientPromise;
     const db = client.db('test'); // Replace with your database name
-
-    if (!email || amount == null) {
-      return res.status(400).json({ error: 'Email and amount are required' });
-    }
-
     const collection = db.collection('users');
     
     // Increment the balance by the specified amount
     const result = await collection.updateOne(
-      { email },
-      { $inc: { balance: parseFloat(amount) } }
+      { walletAddress },
+      { $inc: { balance: parsedAmount } }
     );
 
     if (result.modifiedCount === 0) {

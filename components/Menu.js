@@ -4,13 +4,12 @@ import {
   Button,
   MenuList,
   MenuListItem,
-  Handle,
-  Separator,
   Toolbar,
 } from 'react95';
 import styled from 'styled-components';
-import Cookies from 'js-cookie';
-import useLocalStorage from '../utils/useLocalStorage';
+import { usePrivy } from '@privy-io/react-auth';
+import axios from 'axios';
+import LogoutButton from './LogoutButton';
 
 const BottomWrapper = styled.div`
   position: fixed;
@@ -24,12 +23,31 @@ const EmojiSpan = styled.span`
 `;
 
 const UserDataWrapper = styled.div`
+  display: flex;
+  align-items: center;
   margin-right: 16px; /* Add some margin to the right */
 `;
 
+const LogoutButtonWrapper = styled.div`
+  margin-left: 16px; /* Add some margin to the left */
+`;
+
+const MenuGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+`;
+
+const WalletAddress = styled.div`
+  margin-left: 16px;
+  @media (max-width: 768px) {
+    display: none;
+  }
+`;
+
+
 const Menu = ({
   handleLogout,
-  email,
   onProfileClick,
   onAccountClick,
   onBankClick,
@@ -40,37 +58,38 @@ const Menu = ({
   onInvestmentToolClick,
   openWindows,
 }) => {
+  const { user, ready, authenticated } = usePrivy();
   const [open, setOpen] = useState(false);
-  const [userData, setUserData] = useState({ username: '', balance: '' });
+  const [username, setUsername] = useState('');
+  const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cid] = useLocalStorage('sharpsports_cid', null);
 
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        const email = Cookies.get('email'); // Get email from cookies
-        if (!email) {
-          setError('cool kid club');
-          setLoading(false);
-          return;
-        }
+      if (ready && authenticated && user) {
+        try {
+          const walletAddress = user.wallet?.address;
+          if (!walletAddress) {
+            setError('Wallet address not found');
+            setLoading(false);
+            return;
+          }
 
-        const response = await fetch(`/api/user?email=${email}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          const response = await axios.get(`/api/userByWallet?walletAddress=${walletAddress}`);
+          const data = response.data;
+          setUsername(data.username || '');
+          setBalance(data.balance || 0);
+        } catch (error) {
+          setError(error.message);
+        } finally {
+          setLoading(false);
         }
-        const data = await response.json();
-        setUserData(data);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchUserData();
-  }, []);
+  }, [ready, authenticated, user]);
 
   return (
     <BottomWrapper>
@@ -93,87 +112,83 @@ const Menu = ({
                 }}
                 onClick={() => setOpen(false)}
               >
-                <MenuListItem onClick={onProfileClick}>
-                  <EmojiSpan role="img" aria-label="👨‍💻">
-                    👨‍💻 {openWindows.profile && '✔️'}
-                  </EmojiSpan>
-                  Profile
-                </MenuListItem>
-                <MenuListItem onClick={onAccountClick}>
-                  <EmojiSpan role="img" aria-label="📁">
-                    📁 {openWindows.account && '✔️'}
-                  </EmojiSpan>
-                  Portfolio
-                </MenuListItem>
-                <MenuListItem onClick={onBankClick}>
-                  <EmojiSpan role="img" aria-label="💰">
-                    💰 {openWindows.bank && '✔️'}
-                  </EmojiSpan>
-                  Bank
-                </MenuListItem>
-                <MenuListItem onClick={onAlphaClick}>
-                  <EmojiSpan role="img" aria-label="🍀">
-                    🍀 {openWindows.alpha && '✔️'}
-                  </EmojiSpan>
-                  Alpha
-                </MenuListItem>
-                <MenuListItem onClick={onStatsClick}>
-                  <EmojiSpan role="img" aria-label="📊">
-                    📊 {openWindows.stats && '✔️'}
-                  </EmojiSpan>
-                  Stats
-                </MenuListItem>
-                <MenuListItem onClick={onBooksClick}>
-                  <EmojiSpan role="img" aria-label="📚">
-                    📚 {openWindows.books && '✔️'}
-                  </EmojiSpan>
-                  Books
-                </MenuListItem>
-                <MenuListItem onClick={onContextClick}>
-                  <EmojiSpan role="img" aria-label="🔗">
-                    🔗 {openWindows.context && '✔️'}
-                  </EmojiSpan>
-                  Connect
-                </MenuListItem>
-                <MenuListItem onClick={onInvestmentToolClick}>
-                  <EmojiSpan role="img" aria-label="🛠️">
-                    🛠️ {openWindows.investmentTool && '✔️'}
-                  </EmojiSpan>
-                  Invest
-                </MenuListItem>
-                <Separator />
-                <MenuListItem onClick={handleLogout}>
-                  <EmojiSpan role="img" aria-label="🔙">
-                    🔙
-                  </EmojiSpan>
-                  Logout
-                </MenuListItem>
+                <MenuGrid>
+                  <MenuListItem onClick={onProfileClick}>
+                    <EmojiSpan role="img" aria-label="👨‍💻">
+                      👨‍💻 {openWindows.profile && '✔️'}
+                    </EmojiSpan>
+                    Profile
+                  </MenuListItem>
+                  <MenuListItem onClick={onAccountClick}>
+                    <EmojiSpan role="img" aria-label="📁">
+                      📁 {openWindows.account && '✔️'}
+                    </EmojiSpan>
+                    Positions
+                  </MenuListItem>
+                  <MenuListItem onClick={onBankClick}>
+                    <EmojiSpan role="img" aria-label="💰">
+                      💰 {openWindows.bank && '✔️'}
+                    </EmojiSpan>
+                    Banker
+                  </MenuListItem>
+                  <MenuListItem onClick={onAlphaClick}>
+                    <EmojiSpan role="img" aria-label="🍀">
+                      🍀 {openWindows.alpha && '✔️'}
+                    </EmojiSpan>
+                    Alpha
+                  </MenuListItem>
+                  <MenuListItem onClick={onStatsClick}>
+                    <EmojiSpan role="img" aria-label="📊">
+                      📊 {openWindows.stats && '✔️'}
+                    </EmojiSpan>
+                    Stats
+                  </MenuListItem>
+                  <MenuListItem onClick={onBooksClick}>
+                    <EmojiSpan role="img" aria-label="📚">
+                      📚 {openWindows.books && '✔️'}
+                    </EmojiSpan>
+                    Books
+                    </MenuListItem>
+                  <MenuListItem onClick={onContextClick}>
+                    <EmojiSpan role="img" aria-label="🔗">
+                      🔗 {openWindows.context && '✔️'}
+                    </EmojiSpan>
+                    Context
+                  </MenuListItem>
+                  <MenuListItem onClick={onInvestmentToolClick}>
+                    <EmojiSpan role="img" aria-label="💹">
+                      💹 {openWindows.investmentTool && '✔️'}
+                    </EmojiSpan>
+                    Leverage
+                  </MenuListItem>
+                </MenuGrid>
               </MenuList>
             )}
           </div>
-
           <UserDataWrapper>
             {loading ? (
-              'Loading...'
+              <span>Loading...</span>
             ) : error ? (
-              <span style={{ color: 'red' }}>{error}</span>
+              <span>please add username</span>
             ) : (
-              <span>
-                {userData.username} <Handle size={24} /> ${userData.balance}
-              </span>
+              user && user.wallet && (
+                <>
+                  <WalletAddress>
+                    <strong>{user.wallet.address}</strong>
+                  </WalletAddress>
+                
+                </>
+              )
             )}
+            <LogoutButtonWrapper>
+              <LogoutButton />
+            </LogoutButtonWrapper>
           </UserDataWrapper>
         </Toolbar>
       </AppBar>
-      {cid && (
-        <p>
-          <a href={`https://ui.sharpsports.io/link/${cid}`} target="_blank" rel="noopener noreferrer">
-            Link Sportsbook Account
-          </a>
-        </p>
-      )}
     </BottomWrapper>
   );
 };
 
 export default Menu;
+

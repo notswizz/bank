@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Window, WindowContent, WindowHeader, Button, TextField } from 'react95';
 import Draggable from 'react-draggable';
+import { usePrivy } from '@privy-io/react-auth';
+import axios from 'axios';
 
 const Wrapper = styled.div`
   position: fixed;
@@ -17,34 +19,54 @@ const Label = styled.label`
   margin-bottom: 0.5rem;
 `;
 
-const Bank = ({ onClose }) => {
+const Bank = ({ onClose, onBalanceUpdate }) => {
+  const { user } = usePrivy();
   const [amount, setAmount] = useState('');
   const [error, setError] = useState(null);
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const walletAddress = user.wallet?.address;
+        const response = await axios.get(`/api/userBalance?walletAddress=${walletAddress}`);
+        const data = response.data;
+        setBalance(data.balance);
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
 
   const handleSubmit = async () => {
-    const email = document.cookie.split('; ').find(row => row.startsWith('email=')).split('=')[1];
+    const walletAddress = user.wallet?.address;
 
-    if (!email) {
-      setError('Email not found in cookies');
+    if (!walletAddress) {
+      setError('Wallet address not found');
+      return;
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      setError('Invalid amount');
       return;
     }
 
     try {
-      // Update the balance using PUT request with $inc
-      const updateResponse = await fetch('/api/updateBalance', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, amount }),
+      const updateResponse = await axios.put('/api/updateBalance', {
+        walletAddress,
+        amount: parsedAmount,
       });
 
-      if (!updateResponse.ok) {
+      if (updateResponse.status !== 200) {
         throw new Error('Failed to update balance');
       }
 
-      const result = await updateResponse.json();
+      const result = updateResponse.data;
       console.log(result);
+      onBalanceUpdate(); // Call the callback function to refresh the balance
       onClose(); // Close the window after successful update
     } catch (error) {
       console.error('Error updating balance:', error);
@@ -56,11 +78,12 @@ const Bank = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window style={{ width: 300 }}>
-          <WindowHeader>
+        <WindowHeader className="window-header">
             <span>Bank</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
           <WindowContent>
+         
             <FormGroup>
               <Label htmlFor="amount">Deposit $$</Label>
               <TextField

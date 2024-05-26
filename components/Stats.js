@@ -57,34 +57,31 @@ const Stats = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window>
-          <WindowHeader>
+          <WindowHeader className="window-header">
             <span>Stats</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
           <div style={{ marginTop: '1rem', fontWeight: 'bold' }}>
-              TVL: ${totalBalance}
-            </div>
+            TVL: ${totalBalance}
+          </div>
           <ScrollableWindowContent>
-         
             <Table>
               <TableHead>
                 <TableRow>
                   <TableHeadCell>Username</TableHeadCell>
                   <TableHeadCell>Join Date</TableHeadCell>
-                
                 </TableRow>
               </TableHead>
               <TableBody>
                 {users.map((user) => (
                   <TableRow key={user._id}>
                     <TableDataCell>{user.username}</TableDataCell>
-                    <TableDataCell>{user.join ? formatDate(user.join) : 'N/A'}</TableDataCell>
                 
+                    <TableDataCell>{user.joinedDate ? formatDate(user.joinedDate) : 'N/A'}</TableDataCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          
           </ScrollableWindowContent>
         </Window>
       </Wrapper>

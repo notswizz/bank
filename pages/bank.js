@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import Cookies from 'js-cookie';
 import styled from 'styled-components';
+import { Window, WindowContent, WindowHeader, Button, Toolbar, Monitor } from 'react95';
 import Menu from '../components/Menu';
 import Profile from '../components/Profile';
 import Account from '../components/Account';
@@ -11,8 +11,8 @@ import Stats from '../components/Stats';
 import Books from '../components/Books';
 import Context from '../components/Context';
 import InvestmentTool from '../components/Tool';
-import { Button } from 'react95';
-import useLocalStorage from '../utils/useLocalStorage';
+import { usePrivy } from '@privy-io/react-auth';
+import axios from 'axios';
 
 const Wrapper = styled.div`
   padding: 5rem;
@@ -29,9 +29,16 @@ const WindowWrapper = styled.div`
   position: absolute;
 `;
 
+
+
+const MonitorWrapper = styled(Monitor)`
+color:white;
+  margin-bottom: 20rem;
+`;
+
 const Bank95 = () => {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const { ready, authenticated, user, logout } = usePrivy();
   const [mounted, setMounted] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
@@ -41,6 +48,8 @@ const Bank95 = () => {
   const [showBooks, setShowBooks] = useState(false);
   const [showContext, setShowContext] = useState(false);
   const [showInvestmentTool, setShowInvestmentTool] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [username, setUsername] = useState('');
 
   const accountData = [
     { account: 'Bovada', balance: '$12,098', lastUpdate: '2024-05-20' },
@@ -49,24 +58,47 @@ const Bank95 = () => {
   ];
 
   useEffect(() => {
-    const token = Cookies.get('token');
-    const userEmail = Cookies.get('email');
-    if (!token) {
+    if (ready && !authenticated) {
       router.push('/');
-    } else {
-      setEmail(userEmail);
-    }
-    setMounted(true);
-  }, [router]);
+    } else if (ready && authenticated) {
+      const fetchUserData = async () => {
+        try {
+          const walletAddress = user.wallet?.address;
+          const response = await axios.get(`/api/userByWallet?walletAddress=${walletAddress}`);
+          const data = response.data;
+          if (!data.username) {
+            setShowProfile(true);
+          }
+          setBalance(data.balance || 0);
+          setUsername(data.username || '');
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      };
 
-  const handleLogout = () => {
-    Cookies.remove('token');
-    Cookies.remove('email');
+      fetchUserData();
+      setMounted(true);
+    }
+  }, [ready, authenticated, user, router]);
+
+  const handleLogout = async () => {
+    await logout();
     router.push('/');
   };
 
+  const handleBalanceUpdate = async () => {
+    try {
+      const walletAddress = user.wallet?.address;
+      const response = await axios.get(`/api/userBalance?walletAddress=${walletAddress}`);
+      const data = response.data;
+      setBalance(data.balance);
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    }
+  };
+
   if (!mounted) {
-    return null;
+    return <div>Loading...</div>; // Show a loading state while Privy is initializing
   }
 
   const openWindows = {
@@ -84,7 +116,7 @@ const Bank95 = () => {
     <Wrapper>
       <Menu
         handleLogout={handleLogout}
-        email={email}
+        email={user?.email || ''}
         onProfileClick={() => setShowProfile(!showProfile)}
         onAccountClick={() => setShowAccount(!showAccount)}
         onBankClick={() => setShowBank(!showBank)}
@@ -95,20 +127,26 @@ const Bank95 = () => {
         onInvestmentToolClick={() => setShowInvestmentTool(!showInvestmentTool)}
         openWindows={openWindows}
       />
-      <h1>BANK 95</h1>
+      <MonitorWrapper backgroundStyles={{ background: 'blue' }}>
+        <WindowContent>
+          <h1> ----- BANK 95 ----- </h1>
+          <p><strong> {username}</strong></p>
+          <p><strong>Balance:</strong> ${balance}</p>
+        </WindowContent>
+      </MonitorWrapper>
       {showProfile && (
         <WindowWrapper style={{ top: '10%', left: '15%' }}>
-          <Profile email={email} onClose={() => setShowProfile(false)} />
+          <Profile onClose={() => setShowProfile(false)} />
         </WindowWrapper>
       )}
       {showAccount && (
         <WindowWrapper style={{ top: '10%', left: '50%' }}>
-          <Account data={accountData} onClose={() => setShowAccount(false)} />
+          <Account data={accountData} user={user} onClose={() => setShowAccount(false)} />
         </WindowWrapper>
       )}
       {showBank && (
         <WindowWrapper style={{ top: '67%', left: '10%' }}>
-          <Bank onClose={() => setShowBank(false)} />
+          <Bank onClose={() => setShowBank(false)} onBalanceUpdate={handleBalanceUpdate} />
         </WindowWrapper>
       )}
       {showAlpha && (

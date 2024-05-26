@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Window, WindowContent, WindowHeader, Button, Slider, Radio, GroupBox } from 'react95';
 import Draggable from 'react-draggable';
+import { usePrivy } from '@privy-io/react-auth';
 
 const Wrapper = styled.div`
   position: fixed;
@@ -45,6 +46,7 @@ const StyledTable = styled.table`
 `;
 
 const InvestmentTool = ({ onClose }) => {
+  const { user } = usePrivy();
   const [isClient, setIsClient] = useState(false);
   const [position, setPosition] = useState('long');
   const [amount, setAmount] = useState('');
@@ -53,6 +55,7 @@ const InvestmentTool = ({ onClose }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
     setIsClient(true);
@@ -72,8 +75,19 @@ const InvestmentTool = ({ onClose }) => {
       }
     };
 
+    const fetchBalance = async () => {
+      try {
+        const response = await fetch(`/api/getBalance?email=${user.email}`);
+        const data = await response.json();
+        setBalance(data.balance);
+      } catch (error) {
+        setError(error.message);
+      }
+    };
+
     fetchEthPrice();
-  }, []);
+    fetchBalance();
+  }, [user]);
 
   const handleCalculate = () => {
     const positionSize = amount * leverage;
@@ -81,13 +95,18 @@ const InvestmentTool = ({ onClose }) => {
     const liquidationPrice = position === 'long'
       ? ethPrice * (1 - (initialMargin / positionSize))
       : ethPrice * (1 + (initialMargin / positionSize));
-
+  
+    const profitWithLeverage = positionSize * 0.01;
+    const profitWithoutLeverage = initialMargin * 0.01;
+  
     setResult({
       ethPrice,
       leverage,
       stake: amount,
       positionSize,
       liquidationPrice,
+      profitWithLeverage,
+      profitWithoutLeverage,
     });
   };
 
@@ -100,6 +119,7 @@ const InvestmentTool = ({ onClose }) => {
       ethPrice: result.ethPrice,
       positionSize: result.positionSize,
       liquidationPrice: result.liquidationPrice,
+      walletAddress: user.wallet?.address,
     };
 
     try {
@@ -117,6 +137,9 @@ const InvestmentTool = ({ onClose }) => {
 
       const resultData = await response.json();
       console.log(resultData);
+
+      // Update the balance after saving the investment
+      setBalance((prevBalance) => prevBalance - parseFloat(result.stake));
       onClose(); // Close the window after successful investment
     } catch (error) {
       console.error('Error saving investment:', error);
@@ -140,7 +163,7 @@ const InvestmentTool = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window style={{ width: 600 }}>
-          <WindowHeader>
+          <WindowHeader className="window-header">
             <span>Investment Tool</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
@@ -162,40 +185,45 @@ const InvestmentTool = ({ onClose }) => {
                 name='position'
               />
             </GroupBox>
-
-            <FormGroup>
-              <Label htmlFor="amount">Amount ($USD)</Label>
-              <Input
-                type="number"
-                id="amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-            </FormGroup>
-
-            <FormGroup>
-              <Label>Leverage (1-20x)</Label>
-              <Slider
-                size="300px"
-                min={1}
-                max={20}
-                step={1}
-                value={leverage}
-                onChange={(value) => setLeverage(value)}
-                marks={[
-                  { value: 1, label: '1x' },
-                  { value: 5, label: '5x' },
-                  { value: 10, label: '10x' },
-                  { value: 15, label: '15x' },
-                  { value: 20, label: '20x' },
-                ]}
-              />
-            </FormGroup>
-
-            <Button onClick={handleCalculate} disabled={!amount || amount <= 0 || !ethPrice}>
+  
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <FormGroup style={{ flex: 1 }}>
+                <Label htmlFor="amount">Amount ($USD)</Label>
+                <Input
+                  type="number"
+                  id="amount"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+              </FormGroup>
+              <br></br>
+              <FormGroup style={{ flex: 1 }}>
+                <Label htmlFor="leverage">Leverage (1-20x)</Label>
+                <select
+                  id="leverage"
+                  value={leverage}
+                  onChange={(e) => setLeverage(parseFloat(e.target.value))}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                  }}
+                >
+                  <option value={1}>1x</option>
+                  <option value={2}>2x</option>
+                  <option value={5}>5x</option>
+                  <option value={10}>10x</option>
+                  <option value={15}>15x</option>
+                  <option value={20}>20x</option>
+                </select>
+              </FormGroup>
+            </div>
+  
+            <Button onClick={handleCalculate} disabled={!amount || amount <= 0 || !ethPrice} style={{ marginTop: '1rem' }}>
               Calculate
             </Button>
-
+  
             {result && (
               <>
                 <StyledTable>
@@ -206,6 +234,8 @@ const InvestmentTool = ({ onClose }) => {
                       <th>Stake</th>
                       <th>Position Size</th>
                       <th>Liquidation Price</th>
+                      <th>+1% Lev</th>
+                      <th>+1% No Lev</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -213,12 +243,14 @@ const InvestmentTool = ({ onClose }) => {
                       <td>${result.ethPrice.toFixed(2)}</td>
                       <td>{result.leverage}x</td>
                       <td>${result.stake}</td>
-                      <td>${result.positionSize.toFixed(2)}</td>
-                      <td>${result.liquidationPrice.toFixed(2)}</td>
+                      <td>${result.positionSize}</td>
+                      <td>${result.liquidationPrice.toFixed(0)}</td>
+                      <td>${(result.positionSize * 0.01).toFixed(2)}</td>
+                      <td>${(result.stake * 0.01).toFixed(2)}</td>
                     </tr>
                   </tbody>
                 </StyledTable>
-                <Button onClick={handleSubmit}>
+                <Button onClick={handleSubmit} style={{ marginTop: '1rem' }}>
                   Submit
                 </Button>
               </>

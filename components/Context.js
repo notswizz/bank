@@ -64,7 +64,7 @@ const Context = ({ onClose }) => {
       headers: {
         accept: 'application/json',
         'content-type': 'application/json',
-        Authorization: 'Token 4c0654348c4a7b8c4bf855d59ab16b65c5b69d6f', // Public API Key
+        Authorization: 'Token 14e0460d14dcde2c7098e45e634c09442c71d79b', // Public API Key
       },
       body: JSON.stringify({
         internalId,
@@ -93,7 +93,7 @@ const Context = ({ onClose }) => {
     <Draggable>
       <Wrapper>
         <Window>
-          <WindowHeader>
+        <WindowHeader className="window-header">
             <span>Create Context</span>
             <Button onClick={onClose} style={{ marginLeft: 'auto' }}>X</Button>
           </WindowHeader>
